@@ -1,0 +1,35 @@
+{
+  "manifest_version": 2,
+
+  "name": "purchase-licai",
+  "description": "purchase lianjia licai automatically",
+  "version": "1.0",
+
+  "background":{
+    "page":"popup.html"
+  },
+
+  "browser_action": {
+    "default_title": "",
+    "default_icon": "icon.png",
+    "default_popup": "popup.html"
+  },
+
+  "web_accessible_resources":[
+    "icon.png"
+  ],
+
+  "permissions": [
+    "activeTab",
+    "storage",
+    "notifications",
+    "https://ajax.googleapis.com/"
+  ],
+  "content_scripts":[
+    {
+      "matches":["*://licai.lianjia.com/licai_*","https://licai.lianjia.com//licai/debentureTransfer/buyBid*"],
+      "js":["jquery-latest.js","sortable.js"]
+    }
+  ]
+}
+
