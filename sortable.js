@@ -2,10 +2,13 @@
  * Created by shenkun on 15-2-11.
  */
 $(function(){
-    var confAmount = 0, confPwd = "";
+
+    var confAmount = 0, confPwd = "", confRefInterval = 20000;
     chrome.storage.local.get(null, function(data){  //get default amount and configured password
         confAmount = data['amount'];
         confPwd = data['pwd'];
+        //Refresh "https://licai.lianjia.com/licai" automatically in every x seconds, default value is 20s
+        confRefInterval = "undefined" == typeof(data['interval']) ? 20000 : data['interval'];
 
         if(!confAmount || confAmount =="" || !confPwd || confPwd == ""){
             var warning = '<div display="width:400px; height:200px; text-align:center; background-color:yellow; color:red;" align="center">请先设置' +
@@ -14,6 +17,57 @@ $(function(){
         }
     });
 
+
+    var findProjects = function (){
+
+        var projects = $('a[style^=width]');
+
+        for(var i=0; i<projects.length; i++){
+            if(projects[0].text == "已售罄"){  //if the first item is shouqing then return
+                return;
+            }
+            if(projects[i].text != "已售罄"){
+                var projectTime = Date.now().toString();
+                var timeElement = $('em[data-time^=2015]');
+                console.log("debug: "+timeElement);
+                if(timeElement.length){
+                    projectTime = timeElement.attr("data-time").toString();
+                }
+                //if(timeElement) {
+                //    projectTime = timeElement.getAttribute('data-time');
+                //}
+                var projectUrl = projects[i].getAttribute('href');
+                console.log("Find available projects");
+                //var getCallback =
+                chrome.storage.local.get(projectUrl, function(data){
+                        console.log("debug get value callback:" + projectUrl + data[projectUrl]);
+                        if(data[projectUrl]){  //this project url has been saved
+
+                            // do nothing
+                            console.log("----"+projectUrl+" has been saved");
+                        }else{
+                            var tmp = {};
+                            tmp[projectUrl] = projectTime;
+                            console.log('----debug------');
+                            console.log(tmp);
+                            chrome.storage.local.set(tmp,
+                                function(){
+                                    console.log(projectUrl + ' ' +projectTime);
+                                });
+
+                            chrome.runtime.sendMessage(chrome.runtime.id,{todo: "checkurl", url: projectUrl}, function(response) {
+                                console.log("Is project url exist: "+response.isExist);
+                            });
+
+                            //open(projectUrl);
+                        }
+                    }
+                );
+
+            }
+        }
+
+    }
 
 
     var purchaseProject = function (){
@@ -36,6 +90,7 @@ $(function(){
 
         var remainSum = remain.children()[0].innerHTML - 0; //获取账户余额
         if(remainSum < 1000.0){   //投资最小金额1000元
+            console.log("账户余额小于1000元！");
             return;
         }
 
@@ -127,6 +182,11 @@ $(function(){
         purchaseButton.attr("class", "butInfo");  //make button available for clicking
         purchaseButton.click();
 
+        //转让产品按钮的使能方式不同于标准产品
+        if(location.href.startsWith("https://licai.lianjia.com//licai/debentureTransfer/buyBid")){
+            purchaseButton.attr("check-cash", "T");
+        }
+
 
         var inputPwd = function(){
             console.log("Input password and click confirm button!")
@@ -151,8 +211,18 @@ $(function(){
 
 
     }
-    setInterval(purchaseProject, 500);
+    //setInterval(purchaseProject, 500);
     //setInterval(location.reload(), 10000);
 
+    if(location.href == "https://licai.lianjia.com/licai"){
+        //check if there are some available project can be invested
+        console.log("Find available project to be invented in every !" + confRefInterval.toString());
+        setTimeout(findProjects, 5000);
+        setTimeout(function(){location.reload();}, confRefInterval);
+    }else{
+        //Purchase current project automatically
+        console.log("------purchase project-------");
+        setInterval(purchaseProject, 500);
+    }
 
 });

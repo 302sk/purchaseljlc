@@ -1,8 +1,8 @@
 {
   "manifest_version": 2,
 
-  "name": "purchase-licai",
-  "description": "purchase lianjia licai automatically",
+  "name": "Purchase-licai",
+  "description": "Purchase lianjia licai automatically",
   "version": "1.0",
 
   "background":{
@@ -21,13 +21,14 @@
 
   "permissions": [
     "activeTab",
+    "tabs",
     "storage",
     "notifications",
     "https://ajax.googleapis.com/"
   ],
   "content_scripts":[
     {
-      "matches":["*://licai.lianjia.com/licai_*","https://licai.lianjia.com//licai/debentureTransfer/buyBid*"],
+      "matches":["https://licai.lianjia.com/licai","*://licai.lianjia.com/licai_*","https://licai.lianjia.com//licai/debentureTransfer/buyBid*"],
       "js":["jquery-latest.js","sortable.js"]
     }
   ]
