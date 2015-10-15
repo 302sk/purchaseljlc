@@ -5,9 +5,15 @@ $('#save').click(function (){
   pwdobj["pwd"] = $('#pwd').val();
   var intervalobj = {};
   intervalobj['interval'] = $('#interval').val();
+  var period = {};
+  period['period'] = $('#period').val() - 0;
+  var _yield = {};
+  _yield['yield'] = $('#yield').val() - 0;
   chrome.storage.local.set(amountobj,function(obj){console.log("save amount");});
   chrome.storage.local.set(pwdobj, function(obj){console.log("save pwd");});
   chrome.storage.local.set(intervalobj, function(obj){console.log("save interval")});
+  chrome.storage.local.set(period, function(obj){console.log("save period")});
+  chrome.storage.local.set(_yield, function(obj){console.log("save yield")});
 });
 
 //Init config input box
@@ -15,12 +21,15 @@ $(function(){
   var defAmount = "";
   var defPwd = "";
   var defInterval = 20000;
+  var defPeriod = 90;
+  var defYield = 7;
   chrome.storage.local.get(null, function(configData){
     //Read trade amount
     if(configData['amount']){
       defAmount = configData['amount'];
       $('#amount').val(defAmount);
     }
+
 
     //Read trade password
     if(configData['pwd']){
@@ -32,6 +41,19 @@ $(function(){
       defInterval = configData['interval'];
       $('#interval').val(defInterval);
     }
+
+    //Read yield
+    if(configData['yield']){
+      defYield = configData['yield']-0;
+      $('#yield').val(defYield);
+    }
+
+    //Read project period
+    if(configData['period']){
+      defPeriod = configData['period']-0;
+      $('#period').val(defPeriod);
+    }
+
   });
 });
 

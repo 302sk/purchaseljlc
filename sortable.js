@@ -1,21 +1,8 @@
 /**
  * Created by shenkun on 15-2-11.
  */
-$(function(){
 
-    var confAmount = 0, confPwd = "", confRefInterval = 20000;
-    chrome.storage.local.get(null, function(data){  //get default amount and configured password
-        confAmount = data['amount'];
-        confPwd = data['pwd'];
-        //Refresh "https://licai.lianjia.com/licai" automatically in every x seconds, default value is 20s
-        confRefInterval = "undefined" == typeof(data['interval']) ? 20000 : data['interval'];
-
-        if(!confAmount || confAmount =="" || !confPwd || confPwd == ""){
-            var warning = '<div display="width:400px; height:200px; text-align:center; background-color:yellow; color:red;" align="center">请先设置' +
-                '购买金额和密码（金额不能小于1000密码不能为空！）</div>';
-            $('body').prepend(warning);
-        }
-    });
+var confAmount = 0, confPwd = "", confRefInterval = 20000, confProjectPeriod = 90, confYield = 7;
 
 
     var findProjects = function (){
@@ -23,10 +10,22 @@ $(function(){
         var projects = $('a[style^=width]');
 
         for(var i=0; i<projects.length; i++){
-            if(projects[0].text == "已售罄"){  //if the first item is shouqing then return
+            if(projects[0].text == "已售罄"){  //if the first item is sale out then return
                 return;
             }
             if(projects[i].text != "已售罄"){
+
+                var period = projects[i].parentNode.previousSibling.previousSibling.previousSibling.children[0].innerHTML - 0;
+                if(period > confProjectPeriod){  //project period greater than configuration
+                    console.log("Project period greater than configuration.");
+                    return;
+                }
+                var _yield = projects[i].parentNode.previousSibling.previousSibling.previousSibling.previousSibling.children[0].innerHTML - 0;
+                if(_yield < confYield){  //project yield less than configuration
+                    console.log("Project yield less than configuration.");
+                    return;
+                }
+
                 var projectTime = Date.now().toString();
                 var timeElement = $('em[data-time^=2015]');
                 console.log("debug: "+timeElement);
@@ -126,7 +125,7 @@ $(function(){
                 location.reload();
             }
 
-            if (startTimestamp >= Date.now() || purchaseButton.length == 0 || projectPeriod > 90) {  //if project doesn't start the return
+            if (startTimestamp >= Date.now() || purchaseButton.length == 0) {  //if project doesn't start the return
                 console.log("----非购买时段----非适应天数");
                 return;
             }
@@ -156,6 +155,7 @@ $(function(){
         function checkEmpty(obj, name){
             if (!(obj.lenght)){
                 console.log("There's no " + name);
+                //location.reload();   //for debugging, reload when element missing
             }
             return obj.length;
         }
@@ -171,7 +171,8 @@ $(function(){
             if(!confAmount) {
                 money.val(50000);  //默认设置为5000
             }else{
-                money.val(Math.min(confAmount, projectRemainNum));   //购买金额选择“设置金额”和“项目剩余金额”中比较小的值
+                //projectRemainNum = Math.max(projectRemainNum-5000, 10000);
+                money.val(Math.min(confAmount, projectRemainNum - 5000));   //购买金额选择“设置金额”和“项目剩余金额”中比较小的值
             }
         }
         money.attr("check", "true");
@@ -211,18 +212,37 @@ $(function(){
 
 
     }
-    //setInterval(purchaseProject, 500);
-    //setInterval(location.reload(), 10000);
 
-    if(location.href == "https://licai.lianjia.com/licai"){
-        //check if there are some available project can be invested
-        console.log("Find available project to be invented in every !" + confRefInterval.toString());
-        setTimeout(findProjects, 5000);
-        setTimeout(function(){location.reload();}, confRefInterval);
-    }else{
-        //Purchase current project automatically
-        console.log("------purchase project-------");
-        setInterval(purchaseProject, 500);
-    }
+$(function(){
+    console.log("-----read configuration:" + Date.now().toString());
+    chrome.storage.local.get(null, function(data){  //get default amount and configured password
+        confAmount = data['amount'];
+        confPwd = data['pwd'];
+        confProjectPeriod = data['period'] - 0;
+        confYield = data['yield'] - 0;
+        //Refresh "https://licai.lianjia.com/licai" automatically in every x seconds, default value is 20s
+        confRefInterval = "undefined" == typeof(data['interval']) ? 20000 : data['interval'];
+        //confRefInterval = data['interval'] - 0;
+
+        if(!confAmount || confAmount =="" || !confPwd || confPwd == ""){
+            var warning = '<div display="width:400px; height:200px; text-align:center; background-color:yellow; color:red;" align="center">请先设置' +
+                '购买金额和密码（金额不能小于1000密码不能为空！）</div>';
+            $('body').prepend(warning);
+        }
+
+        console.log("-----read configuration completed:" + Date.now().toString());
+
+        if(location.href == "https://licai.lianjia.com/licai"){
+            //check if there are some available project can be invested
+            console.log("Find available project to be invented in every !" + confRefInterval.toString());
+            setTimeout(findProjects, 5000);
+            setTimeout(function(){location.reload();}, confRefInterval);
+        }else{
+            //Purchase current project automatically
+            console.log("------purchase project-------");
+            setInterval(purchaseProject, 800);
+        }
+    });
+
 
 });
