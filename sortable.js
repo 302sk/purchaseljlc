@@ -4,6 +4,7 @@
 
 var confAmount = 0, confPwd = "", confRefInterval = 20000, confProjectPeriod = 90, confYield = 7;
 
+var intervalID = 0;  //for testing new method
 
     var findProjects = function (){
 
@@ -116,13 +117,38 @@ var confAmount = 0, confPwd = "", confRefInterval = 20000, confProjectPeriod = 9
             var timeTxt = $('div[class^="up_time"]').children().text();
             var startTimestamp = Date.parse(timeTxt);
 
-            var projectPeriod = $('dt:contains("项目期限")').next().children()[0].innerHTML - 0;
+            //var projectPeriod = $('dt:contains("项目期限")').next().children()[0].innerHTML - 0;
 
-            if((Date.now() - startTimestamp <= 2000) && (startTimestamp <= Date.now())){  //每次判断是否已到购买时间，因为页面的计时器偏差巨大。第一次检测到达购买时间应立即刷新页面执行脚本，
+            if((Date.now() - startTimestamp <= 10000) && (startTimestamp <= Date.now())){  //每次判断是否已到购买时间，因为页面的计时器偏差巨大。第一次检测到达购买时间应立即刷新页面执行脚本，
                                                 //需要判断第一次到达时间(超过2秒内，算作第一次到达，最坏情况下多刷新一次)
                 //setTimeout(function(){location.reload();}, 1);
-                console.log("到达购买时间，刷新页面");
-                location.reload();
+                console.log("开始购买10秒内，尝试post购买指令，之后reload");
+                if(location.href.startsWith("https://licai.lianjia.com/licai_")) {
+                    var b = {};
+                    b.payKey = confPwd;
+                    b.investment = confAmount;
+                    if (!location.href.indexOf("?")) {
+                        var dotPosition = location.href.indexOf(".html")
+                        b.bidId = location.href.slice(32, dotPosition) - 0;
+                    }
+                    b.cashCoupon = 0;
+                    console.log("----post data------");
+                    console.log(b);
+                    $.post(homelink_config.basePath + "manageMoney/tenderFreeze", HomeLink.tools.safeRnd.init(b), function (d) {
+                        console.log(d);
+                        if (d.result) {
+                            console.log("购买产品成功，停止计时器");
+                            if(intervalID){
+                                clearInterval(intervalID);
+                                intervalID = 0;
+                            }
+
+                        } else {
+                            location.reload();
+                        }
+                    });
+                }
+
             }
 
             if (startTimestamp >= Date.now() || purchaseButton.length == 0) {  //if project doesn't start the return
@@ -172,7 +198,7 @@ var confAmount = 0, confPwd = "", confRefInterval = 20000, confProjectPeriod = 9
                 money.val(50000);  //默认设置为5000
             }else{
                 //projectRemainNum = Math.max(projectRemainNum-5000, 10000);
-                money.val(Math.min(confAmount, projectRemainNum - 5000));   //购买金额选择“设置金额”和“项目剩余金额”中比较小的值
+                money.val(Math.min(confAmount, projectRemainNum));   //购买金额选择“设置金额”和“项目剩余金额”中比较小的值
             }
         }
         money.attr("check", "true");
@@ -240,7 +266,7 @@ $(function(){
         }else{
             //Purchase current project automatically
             console.log("------purchase project-------");
-            setInterval(purchaseProject, 800);
+            intervalID = setInterval(purchaseProject, 500);
         }
     });
 
