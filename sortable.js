@@ -94,8 +94,13 @@ var intervalID = 0;  //for testing new method
             return;
         }
 
+        var accountRemain = Math.floor(($('p.surplus span.c_red').text()-0)/1000) * 1000;//账户剩余可投金额1000整数倍
+        var postAmount  = Math.min(confAmount, accountRemain, projectRemainNum);
+
+
         console.log("---amount: " + confAmount.toString());
         console.log("---pwd: " + confPwd);
+        console.log("---postAmount: " + postAmount);
 
         var transfer = false;
         var projectType = 0;
@@ -118,36 +123,80 @@ var intervalID = 0;  //for testing new method
             var startTimestamp = Date.parse(timeTxt);
 
             //var projectPeriod = $('dt:contains("项目期限")').next().children()[0].innerHTML - 0;
-
-            if((Date.now() - startTimestamp <= 10000) && (startTimestamp <= Date.now())){  //每次判断是否已到购买时间，因为页面的计时器偏差巨大。第一次检测到达购买时间应立即刷新页面执行脚本，
+            //if(Date.now() > startTimestamp){
+            var currentTime = Date.now();
+            if((currentTime - startTimestamp <= 60000) && (startTimestamp <= currentTime) && (currentTime - startTimestamp >= 20000)){  //每次判断是否已到购买时间，因为页面的计时器偏差巨大。第一次检测到达购买时间应立即刷新页面执行脚本，
                                                 //需要判断第一次到达时间(超过2秒内，算作第一次到达，最坏情况下多刷新一次)
                 //setTimeout(function(){location.reload();}, 1);
                 console.log("开始购买10秒内，尝试post购买指令，之后reload");
-                if(location.href.startsWith("https://licai.lianjia.com/licai_")) {
-                    var b = {};
-                    b.payKey = confPwd;
-                    b.investment = confAmount;
-                    if (!location.href.indexOf("?")) {
-                        var dotPosition = location.href.indexOf(".html")
-                        b.bidId = location.href.slice(32, dotPosition) - 0;
-                    }
-                    b.cashCoupon = 0;
-                    console.log("----post data------");
-                    console.log(b);
-                    $.post(homelink_config.basePath + "manageMoney/tenderFreeze", HomeLink.tools.safeRnd.init(b), function (d) {
-                        console.log(d);
-                        if (d.result) {
-                            console.log("购买产品成功，停止计时器");
-                            if(intervalID){
-                                clearInterval(intervalID);
-                                intervalID = 0;
-                            }
 
-                        } else {
-                            location.reload();
-                        }
-                    });
-                }
+                //********************//
+                //Inject js code for using global variable homelink_config and HomeLink
+                var actualCode = ['if(location.href.startsWith("https://licai.lianjia.com/licai_")) {',
+                    'var b = {};',
+                    'b.payKey ="' + confPwd + '";',
+                    'b.investment = ' + postAmount + ';',
+
+                    'var dotPosition = location.href.indexOf(".html");',
+                    'b.bidId = location.href.slice(32, dotPosition) - 0;',
+
+                    'b.cashCoupon = 0;',
+                    'console.log("----post data------");',
+                    'console.log(b);',
+                    'console.log(Date.now());',
+
+                    '$.post(homelink_config.basePath + "manageMoney/tenderFreeze", HomeLink.tools.safeRnd.init(b), function (d) {',
+                        'console.log(d);',
+                        'if (d.result) {',
+                            'location.href="www.baidu.com"',
+                            'console.log("购买产品成功，停止计时器");',
+                            'console.log(d.data);',
+                            'for(var k in d.data){',
+                                'console.log(k + " : " + d.data[k]);',
+                            '}',
+                        '}',
+                        'return;',
+                    '});',
+                '}'
+                ].join("\n");
+                var script = document.createElement('script');
+                script.textContent = actualCode;
+                (document.head||document.documentElement).appendChild(script);
+                script.parentNode.removeChild(script);
+
+                //********************//
+                //if(location.href.startsWith("https://licai.lianjia.com/licai_")) {
+                //    var b = {};
+                //    b.payKey = confPwd;
+                //    b.investment = postAmount;//confAmount;
+                //
+                //    var dotPosition = location.href.indexOf(".html")
+                //    b.bidId = location.href.slice(32, dotPosition) - 0;
+                //
+                //    b.cashCoupon = 0;
+                //    console.log("----post data------");
+                //    console.log(b);
+                //    console.log(Date.now());
+                //
+                //    $.post(homelink_config.basePath + "manageMoney/tenderFreeze", HomeLink.tools.safeRnd.init(b), function (d) {
+                //        console.log(d);
+                //        if (d.result) {
+                //            console.log("购买产品成功，停止计时器");
+                //            console.log(d.data);
+                //            for(var k in d.data){
+                //                console.log(k + " : " + d.data[k]);
+                //            }
+                //            if(intervalID){
+                //                clearInterval(intervalID);
+                //                intervalID = 0;
+                //            }
+                //
+                //
+                //        }
+                //        return;
+                //    });
+                //}
+                return;
 
             }
 
